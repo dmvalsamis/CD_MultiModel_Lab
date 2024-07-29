@@ -1,0 +1,58 @@
+import sys
+sys.path.append('/home/dvalsamis/Documents/projects/Change_detection_SSL_Siamese')
+
+import numpy as np
+import tensorflow as tf
+from architectures.conv_classifier import conv_classifier_two, conv_classifier_two_with_nspp
+
+depth = 2
+dropout = 0.1
+decay = 0.0001
+NORM = True
+ImageSize = 96
+n_ch = 3
+channel = 'rgb'
+
+model_1 = conv_classifier_two(depth, dropout, decay, ImageSize, ImageSize, n_ch)
+model_2 = conv_classifier_two_with_nspp(depth, dropout, decay, ImageSize, ImageSize, n_ch)
+
+# Load the first model
+model_path_1 = '/home/dvalsamis/Documents/projects/Change_detection_SSL_Siamese/saved_models/CD_Simple1_CBMI_2d94.h5'
+model_1.load_weights(model_path_1)
+
+# Load the second model
+model_path_2 = '/home/dvalsamis/Documents/projects/Change_detection_SSL_Siamese/saved_models/CD_Simple1_CBMI_aad0.h5' 
+model_2.load_weights(model_path_2)
+
+# Print all layer names for both models
+print("\nModel 1 Layer Names:")
+for layer in model_1.layers:
+    print(layer.name)
+
+print("\nModel 2 Layer Names:")
+for layer in model_2.layers:
+    print(layer.name)
+
+# Layers to check
+layers_to_check = ['norm_1', 'conv1_1', 'norm1_1', 'conv2_1', 'norm2_1', 'dropout1_1', 'dropout2_1', 'relu1_1', 'relu2_1']
+
+# Check weights for specific layers in both models
+for layer_name in layers_to_check:
+    layer_1 = model_1.get_layer(layer_name)
+    layer_2 = model_2.get_layer(layer_name)
+    
+    if layer_1 is not None and layer_2 is not None:
+        weights_1 = layer_1.get_weights()
+        weights_2 = layer_2.get_weights()
+        
+        if len(weights_1) > 0 and len(weights_2) > 0:
+            if np.array_equal(weights_1, weights_2):
+                print(f"Weights for layer {layer_name} are the same.")
+            else:
+                print(f"Weights for layer {layer_name} are different.")
+        else:
+            print(f"Weights not found for layer {layer_name} in one or both models.")
+    else:
+        print(f"Layer {layer_name} not found in one or both models.")
+
+print("done")
